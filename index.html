@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>Micro QR Reader</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #111;
+      color: #fff;
+      text-align: center;
+    }
+    video {
+      width: 100%;
+      max-width: 480px;
+      border: 2px solid #444;
+    }
+    #result {
+      margin-top: 1em;
+      font-size: 1.2em;
+      color: #0f0;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Micro QR Reader</h1>
+  <video id="video" autoplay playsinline></video>
+  <div id="result">未検出</div>
+
+  <!-- QRコードを読むためのライブラリ -->
+  <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0"></script>
+
+  <!-- 自分で書くプログラム -->
+  <script src="main.js"></script>
+</body>
+</html>
