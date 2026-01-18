@@ -20,16 +20,18 @@ async function startCamera() {
     });
     video.srcObject = stream;
 
-    await codeReader.decodeFromVideoElement(video, (result, err) => {
+    codeReader.decodeFromVideoElement(video, (result, err) => {
       if (result) {
         resultDiv.textContent = result.getText();
       }
     });
 
   } catch (e) {
-    resultDiv.textContent = "ƒJƒƒ‰‹N“®¸”s";
+    resultDiv.textContent = "ã‚«ãƒ¡ãƒ©èµ·å‹•å¤±æ•—";
     console.error(e);
   }
 }
 
-startCamera();
+document.getElementById("startBtn").addEventListener("click", () => {
+  startCamera();
+});
