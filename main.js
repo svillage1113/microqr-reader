@@ -1,6 +1,8 @@
 const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
 const result = document.getElementById("result");
-const startBtn = document.getElementById("start");
+const btn = document.getElementById("start");
+const ctx = canvas.getContext("2d");
 
 const reader = new ZXing.BrowserMultiFormatReader(
   new Map([
@@ -14,28 +16,26 @@ const reader = new ZXing.BrowserMultiFormatReader(
   ])
 );
 
-startBtn.addEventListener("click", async () => {
-  try {
-    // ① カメラ取得
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment" },
-      audio: false
-    });
+btn.addEventListener("click", async () => {
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: "environment" },
+    audio: false
+  });
 
-    // ② 映像表示
-    video.srcObject = stream;
-    await video.play();
+  video.srcObject = stream;
+  await video.play();
 
-    // ③ 表示が安定してから ZXing 起動
-    setTimeout(() => {
-      reader.decodeFromVideoElement(video, (res, err) => {
-        if (res) {
-          result.textContent = res.getText();
-        }
-      });
-    }, 300);
+  // フレームを定期的に canvas にコピーして解析
+  setInterval(async () => {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
 
-  } catch (e) {
-    alert(e.message);
-  }
+    try {
+      const res = await reader.decodeFromCanvas(canvas);
+      if (res) result.textContent = res.getText();
+    } catch (e) {
+      // 未検出は無視
+    }
+  }, 300);
 });
