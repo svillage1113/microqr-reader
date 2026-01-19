@@ -1,7 +1,8 @@
 const video = document.getElementById("video");
-const resultDiv = document.getElementById("result");
+const result = document.getElementById("result");
+const startBtn = document.getElementById("start");
 
-const codeReader = new ZXing.BrowserMultiFormatReader(
+const reader = new ZXing.BrowserMultiFormatReader(
   new Map([
     [
       ZXing.DecodeHintType.POSSIBLE_FORMATS,
@@ -13,29 +14,28 @@ const codeReader = new ZXing.BrowserMultiFormatReader(
   ])
 );
 
-async function startCamera() {
+startBtn.addEventListener("click", async () => {
   try {
+    // ① カメラ取得
     const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment" }
+      video: { facingMode: "environment" },
+      audio: false
     });
 
+    // ② 映像表示
     video.srcObject = stream;
-
-    // ★これを必ず入れる（超重要）
     await video.play();
 
-    codeReader.decodeFromVideoElement(video, (result, err) => {
-      if (result) {
-        resultDiv.textContent = result.getText();
-      }
-    });
+    // ③ 表示が安定してから ZXing 起動
+    setTimeout(() => {
+      reader.decodeFromVideoElement(video, (res, err) => {
+        if (res) {
+          result.textContent = res.getText();
+        }
+      });
+    }, 300);
 
   } catch (e) {
-    resultDiv.textContent = "カメラ起動失敗";
-    console.error(e);
+    alert(e.message);
   }
-}
-
-document.getElementById("startBtn").addEventListener("click", () => {
-  startCamera();
 });
