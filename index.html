@@ -5,22 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Micro QR Reader</title>
 <style>
-  body {
-    margin: 0;
-    background: black;
-    color: white;
-    text-align: center;
-  }
-  video {
-    width: 100vw;
-    height: auto;
-  }
+  body { background:black; color:white; text-align:center; }
+  video { width:100vw; }
+  canvas { display:none; }
 </style>
 </head>
 <body>
 
 <h2>Micro QR Reader</h2>
 <video id="video" muted playsinline></video>
+<canvas id="canvas"></canvas>
 <p id="result">未検出</p>
 <button id="start">カメラ起動</button>
 
