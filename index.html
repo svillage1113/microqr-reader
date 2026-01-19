@@ -3,11 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Camera Test</title>
+<title>Micro QR Reader</title>
 <style>
   body {
     margin: 0;
     background: black;
+    color: white;
+    text-align: center;
   }
   video {
     width: 100vw;
@@ -17,28 +19,13 @@
 </head>
 <body>
 
-<video id="video" autoplay muted playsinline></video>
+<h2>Micro QR Reader</h2>
+<video id="video" muted playsinline></video>
+<p id="result">未検出</p>
+<button id="start">カメラ起動</button>
 
-<script>
-(async () => {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment" },
-      audio: false
-    });
-
-    const video = document.getElementById("video");
-    video.srcObject = stream;
-
-    video.onloadedmetadata = () => {
-      video.play();
-    };
-
-  } catch (e) {
-    alert(e.message);
-  }
-})();
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0"></script>
+<script src="main.js"></script>
 
 </body>
 </html>
