@@ -18,7 +18,11 @@ async function startCamera() {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: "environment" }
     });
+
     video.srcObject = stream;
+
+    // ★これを必ず入れる（超重要）
+    await video.play();
 
     codeReader.decodeFromVideoElement(video, (result, err) => {
       if (result) {
