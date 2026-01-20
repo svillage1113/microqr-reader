@@ -12,10 +12,12 @@ const ctx = canvas.getContext("2d");
   await video.play();
 
   function draw() {
-    if (video.videoWidth > 0) {
-      canvas.width = video.videoWidth;
+    if (video.videoWidth > 0 && video.videoHeight > 0) {
+      // ★ ここが最重要（CSSではなく属性）
+      canvas.width  = video.videoWidth;
       canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0);
+
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     }
     requestAnimationFrame(draw);
   }
