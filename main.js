@@ -1,8 +1,6 @@
 let video, canvas, ctx;
-let streaming = false;
 
 function onOpenCvReady() {
-  console.log("OpenCV ready");
   startCamera();
 }
 
@@ -22,40 +20,20 @@ async function startCamera() {
   video.addEventListener("loadedmetadata", () => {
     canvas.width  = video.videoWidth;
     canvas.height = video.videoHeight;
-    streaming = true;
-    requestAnimationFrame(processFrame);
+    requestAnimationFrame(loop);
   });
 }
 
-function processFrame() {
-  if (!streaming) return;
-
-  // ① video → canvas
+function loop() {
+  // video → canvas
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-  // ② canvas → OpenCV Mat
+  // canvas → OpenCV
   let src = cv.imread(canvas);
 
-  // ③ グレースケール
-  let gray = new cv.Mat();
-  cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+  // ★ 処理しない（そのまま返す）
+  cv.imshow(canvas, src);
 
-  // ⑤ 二値化
-let bin = new cv.Mat();
-cv.threshold(gray, bin, 128, 255, cv.THRESH_BINARY);
-
-// ★ 追加：GRAY → RGBA
-let rgba = new cv.Mat();
-cv.cvtColor(bin, rgba, cv.COLOR_GRAY2RGBA);
-
-// ⑥ canvas に描画
-cv.imshow(canvas, rgba);
-
-// メモリ解放
-src.delete();
-gray.delete();
-bin.delete();
-rgba.delete();
-
-  requestAnimationFrame(processFrame);
+  src.delete();
+  requestAnimationFrame(loop);
 }
