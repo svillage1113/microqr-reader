@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Camera Canvas OK</title>
+<title>OpenCV Camera Binarize</title>
 <style>
   body { margin:0; background:black; }
 
   video {
     position: absolute;
-    left: -9999px;   /* 画面外 */
-    opacity: 0;      /* 見えない */
+    left: -9999px;
+    opacity: 0;
   }
 
   canvas {
@@ -24,6 +24,10 @@
 
 <video id="video" playsinline muted></video>
 <canvas id="canvas"></canvas>
+
+<!-- OpenCV.js（公式） -->
+<script async src="https://docs.opencv.org/4.x/opencv.js"
+        onload="onOpenCvReady();"></script>
 
 <script src="main.js"></script>
 </body>
