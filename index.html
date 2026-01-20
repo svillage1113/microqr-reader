@@ -30,6 +30,15 @@
   video.srcObject = stream;
   await video.play();
 })();
+  function onOpenCvReady() {
+    alert("OpenCV.js ready!");
+  }
+
+  if (typeof cv !== "undefined") {
+    onOpenCvReady();
+  } else {
+    document.addEventListener("opencvready", onOpenCvReady);
+  }
 </script>
 
 </body>
