@@ -1,26 +1,10 @@
-const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-(async () => {
-  const stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: "environment" },
-    audio: false
-  });
+// ★ CSSではなく「属性」でサイズ指定（重要）
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-  video.srcObject = stream;
-  await video.play();
-
-  function draw() {
-    if (video.videoWidth > 0 && video.videoHeight > 0) {
-      // ★ ここが最重要（CSSではなく属性）
-      canvas.width  = video.videoWidth;
-      canvas.height = video.videoHeight;
-
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    }
-    requestAnimationFrame(draw);
-  }
-
-  draw();
-})();
+// 赤で塗る
+ctx.fillStyle = "red";
+ctx.fillRect(0, 0, canvas.width, canvas.height);
