@@ -40,17 +40,22 @@ function processFrame() {
   let gray = new cv.Mat();
   cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
-  // ④ 二値化
-  let bin = new cv.Mat();
-  cv.threshold(gray, bin, 128, 255, cv.THRESH_BINARY);
+  // ⑤ 二値化
+let bin = new cv.Mat();
+cv.threshold(gray, bin, 128, 255, cv.THRESH_BINARY);
 
-  // ⑤ 結果を canvas に戻す
-  cv.imshow(canvas, bin);
+// ★ 追加：GRAY → RGBA
+let rgba = new cv.Mat();
+cv.cvtColor(bin, rgba, cv.COLOR_GRAY2RGBA);
 
-  // メモリ解放（超重要）
-  src.delete();
-  gray.delete();
-  bin.delete();
+// ⑥ canvas に描画
+cv.imshow(canvas, rgba);
+
+// メモリ解放
+src.delete();
+gray.delete();
+bin.delete();
+rgba.delete();
 
   requestAnimationFrame(processFrame);
 }
