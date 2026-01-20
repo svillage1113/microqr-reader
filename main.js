@@ -21,6 +21,8 @@ function startCamera() {
       ready = true;
       requestAnimationFrame(loop);
     });
+  }).catch(err => {
+    alert("カメラエラー: " + err);
   });
 }
 
@@ -45,23 +47,30 @@ function loop() {
   let enhanced = new cv.Mat();
   cv.normalize(gray, enhanced, 0, 255, cv.NORM_MINMAX);
 
-  // ⑤ エッジ検出（Canny）
+  // ⑤ ぼかし（Canny必須）
+  let blurred = new cv.Mat();
+  cv.GaussianBlur(
+    enhanced,
+    blurred,
+    new cv.Size(5, 5),
+    0,
+    0,
+    cv.BORDER_DEFAULT
+  );
+
+  // ⑥ エッジ検出
   let edges = new cv.Mat();
-  cv.Canny(enhanced, edges, 80, 160);
+  cv.Canny(blurred, edges, 50, 150);
 
-  // ⑥ 表示用に RGBA に戻す
-  let display = new cv.Mat();
-  cv.cvtColor(edges, display, cv.COLOR_GRAY2RGBA);
-
-  // ⑦ output canvas に描画
-  cv.imshow(outCanvas, display);
+  // ⑦ ★そのまま表示（超重要）
+  cv.imshow(outCanvas, edges);
 
   // ⑧ メモリ解放
   src.delete();
   gray.delete();
   enhanced.delete();
+  blurred.delete();
   edges.delete();
-  display.delete();
 
   requestAnimationFrame(loop);
 }
@@ -74,7 +83,7 @@ function waitForOpenCV() {
   }
 
   cv.onRuntimeInitialized = () => {
-    console.log("OpenCV fully initialized");
+    console.log("OpenCV ready");
     startCamera();
   };
 }
