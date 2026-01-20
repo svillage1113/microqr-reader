@@ -1,21 +1,19 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OpenCV Grayscale Test</title>
 <style>
   body { margin:0; background:black; }
-  video, canvas { width:100vw; height:auto; }
+
+  video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    z-index: 0;
+  }
+
+  canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    z-index: 1;
+  }
 </style>
-</head>
-<body>
-
-<video id="video" autoplay muted playsinline></video>
-<canvas id="canvas"></canvas>
-
-<script async src="https://docs.opencv.org/4.x/opencv.js"></script>
-<script src="main.js"></script>
-
-</body>
-</html>
