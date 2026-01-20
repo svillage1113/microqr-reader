@@ -9,12 +9,9 @@ const ctx = canvas.getContext("2d");
   });
 
   video.srcObject = stream;
+  await video.play();
 
-  // ★ metadata が来るのを待つ（超重要）
   video.addEventListener("loadedmetadata", () => {
-    video.play();
-
-    // ★ ここで初めてサイズ確定
     canvas.width  = video.videoWidth;
     canvas.height = video.videoHeight;
 
