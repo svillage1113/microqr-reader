@@ -1,4 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Camera Canvas OK</title>
 <style>
   body { margin:0; background:black; }
-  canvas { width:100vw; height:auto; display:block; }
+
+  video {
+    position: absolute;
+    left: -9999px;   /* 画面外 */
+    opacity: 0;      /* 見えない */
+  }
+
+  canvas {
+    width: 100vw;
+    height: auto;
+    display: block;
+  }
 </style>
+</head>
+<body>
+
+<video id="video" playsinline muted></video>
+<canvas id="canvas"></canvas>
+
+<script src="main.js"></script>
+</body>
+</html>
