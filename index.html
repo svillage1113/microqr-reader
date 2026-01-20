@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OpenCV Camera Binarize</title>
+<title>OpenCV Safe Test</title>
 <style>
   body { margin:0; background:black; }
 
@@ -23,12 +23,15 @@
 <body>
 
 <video id="video" playsinline muted></video>
-<canvas id="canvas"></canvas>
 
-<!-- OpenCV.js（公式） -->
+<!-- 入力用 -->
+<canvas id="input"></canvas>
+
+<!-- 出力用 -->
+<canvas id="output"></canvas>
+
 <script async src="https://docs.opencv.org/4.x/opencv.js"
-        onload="onOpenCvReady();"></script>
-
+        onload="onOpenCvReady()"></script>
 <script src="main.js"></script>
 </body>
 </html>
