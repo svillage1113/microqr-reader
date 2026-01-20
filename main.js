@@ -1,13 +1,16 @@
-let video, canvas, ctx;
+let video, inCanvas, outCanvas, inCtx;
+let ready = false;
 
 function onOpenCvReady() {
+  console.log("OpenCV loaded");
   startCamera();
 }
 
 async function startCamera() {
   video = document.getElementById("video");
-  canvas = document.getElementById("canvas");
-  ctx = canvas.getContext("2d");
+  inCanvas = document.getElementById("input");
+  outCanvas = document.getElementById("output");
+  inCtx = inCanvas.getContext("2d");
 
   const stream = await navigator.mediaDevices.getUserMedia({
     video: { facingMode: "environment" },
@@ -18,21 +21,27 @@ async function startCamera() {
   await video.play();
 
   video.addEventListener("loadedmetadata", () => {
-    canvas.width  = video.videoWidth;
-    canvas.height = video.videoHeight;
+    inCanvas.width = outCanvas.width = video.videoWidth;
+    inCanvas.height = outCanvas.height = video.videoHeight;
+    ready = true;
     requestAnimationFrame(loop);
   });
 }
 
 function loop() {
-  // video → canvas
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  if (!ready || typeof cv === "undefined" || !cv.imread) {
+    requestAnimationFrame(loop);
+    return;
+  }
 
-  // canvas → OpenCV
-  let src = cv.imread(canvas);
+  // video → input canvas
+  inCtx.drawImage(video, 0, 0, inCanvas.width, inCanvas.height);
 
-  // ★ 処理しない（そのまま返す）
-  cv.imshow(canvas, src);
+  // input canvas → OpenCV
+  let src = cv.imread(inCanvas);
+
+  // ★ 何もしないで output に出す
+  cv.imshow(outCanvas, src);
 
   src.delete();
   requestAnimationFrame(loop);
