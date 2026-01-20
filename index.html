@@ -3,23 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Micro QR Reader</title>
+<title>OpenCV Camera Test</title>
 <style>
-  body { background:black; color:white; text-align:center; }
-  video { width:100vw; }
+  body { margin:0; background:black; }
+  video { width:100vw; height:auto; }
   canvas { display:none; }
 </style>
 </head>
 <body>
 
-<h2>Micro QR Reader</h2>
-<video id="video" muted playsinline></video>
+<video id="video" autoplay muted playsinline></video>
 <canvas id="canvas"></canvas>
-<p id="result">未検出</p>
-<button id="start">カメラ起動</button>
 
-<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0"></script>
-<script src="main.js"></script>
+<!-- OpenCV.js -->
+<script async src="https://docs.opencv.org/4.x/opencv.js"></script>
+
+<script>
+(async () => {
+  const video = document.getElementById("video");
+
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: "environment" },
+    audio: false
+  });
+
+  video.srcObject = stream;
+  await video.play();
+})();
+</script>
 
 </body>
 </html>
