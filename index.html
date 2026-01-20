@@ -3,11 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OpenCV Camera Test</title>
+<title>OpenCV Grayscale Test</title>
 <style>
   body { margin:0; background:black; }
-  video { width:100vw; height:auto; }
-  canvas { display:none; }
+  video, canvas { width:100vw; height:auto; }
 </style>
 </head>
 <body>
@@ -15,31 +14,8 @@
 <video id="video" autoplay muted playsinline></video>
 <canvas id="canvas"></canvas>
 
-<!-- OpenCV.js -->
 <script async src="https://docs.opencv.org/4.x/opencv.js"></script>
-
-<script>
-(async () => {
-  const video = document.getElementById("video");
-
-  const stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: "environment" },
-    audio: false
-  });
-
-  video.srcObject = stream;
-  await video.play();
-})();
-  function onOpenCvReady() {
-    alert("OpenCV.js ready!");
-  }
-
-  if (typeof cv !== "undefined") {
-    onOpenCvReady();
-  } else {
-    document.addEventListener("opencvready", onOpenCvReady);
-  }
-</script>
+<script src="main.js"></script>
 
 </body>
 </html>
