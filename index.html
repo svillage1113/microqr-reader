@@ -1,36 +1,69 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OpenCV Safe Test</title>
-<style>
-  body { margin:0; background:black; }
+  <meta charset="UTF-8" />
+  <title>MicroQR Detector Prototype</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  video {
-    position: absolute;
-    left: -9999px;
-    opacity: 0;
-  }
+  <!-- OpenCV.js 固定版 -->
+  <script src="https://docs.opencv.org/4.8.0/opencv.js"></script>
 
-  canvas {
-    width: 100vw;
-    height: auto;
-    display: block;
-  }
-</style>
+  <style>
+    body {
+      background: #111;
+      color: #fff;
+      font-family: sans-serif;
+      text-align: center;
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    canvas {
+      border: 1px solid #444;
+      max-width: 100%;
+    }
+
+    video {
+      display: none; /* videoタグは表示しない */
+    }
+
+    h2 {
+      width: 100%;
+      margin-top: 20px;
+    }
+  </style>
 </head>
 <body>
 
-<video id="video" playsinline muted></video>
+  <h1>MicroQR 検出テスト</h1>
 
-<!-- 入力用 -->
-<canvas id="input"></canvas>
+  <!-- カメラ用（非表示） -->
+  <video id="video" playsinline></video>
 
-<!-- 出力用 -->
-<canvas id="output"></canvas>
+  <div class="container">
+    <div>
+      <h2>Input（カメラ）</h2>
+      <canvas id="input"></canvas>
+    </div>
 
-<script src="https://docs.opencv.org/4.8.0/opencv.js"></script>
-<script src="main.js"></script>
+    <div>
+      <h2>Detection（赤枠）</h2>
+      <canvas id="output"></canvas>
+    </div>
+
+    <div>
+      <h2>ROI（切り出し）</h2>
+      <canvas id="roi"></canvas>
+    </div>
+  </div>
+
+  <!-- メイン処理 -->
+  <script src="main.js"></script>
+
 </body>
 </html>
