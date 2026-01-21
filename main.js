@@ -7,7 +7,6 @@ function startCamera() {
   inCanvas = document.getElementById("input");
   outCanvas = document.getElementById("output");
   roiCanvas = document.getElementById("roi");
-
   inCtx = inCanvas.getContext("2d");
 
   navigator.mediaDevices.getUserMedia({
@@ -32,6 +31,41 @@ function startCamera() {
   });
 }
 
+/* ===== MicroQR 内部パターン検査 ===== */
+function checkMicroQRPattern(roiMat) {
+  // グレースケール
+  let gray = new cv.Mat();
+  cv.cvtColor(roiMat, gray, cv.COLOR_RGBA2GRAY);
+
+  // 64x64 に正規化
+  let resized = new cv.Mat();
+  cv.resize(gray, resized, new cv.Size(64, 64));
+
+  // 左上 1/3 領域
+  let size = Math.floor(64 / 3);
+  let roi = resized.roi(new cv.Rect(0, 0, size, size));
+
+  // 横方向スキャン（中央ライン）
+  let y = Math.floor(size / 2);
+  let transitions = 0;
+  let prev = roi.ucharPtr(y, 0)[0] > 128;
+
+  for (let x = 1; x < size; x++) {
+    let cur = roi.ucharPtr(y, x)[0] > 128;
+    if (cur !== prev) transitions++;
+    prev = cur;
+  }
+
+  // 後始末
+  gray.delete();
+  resized.delete();
+  roi.delete();
+
+  // 黒→白→黒 = 遷移2回以上
+  let confidence = Math.min(transitions / 4, 1.0);
+  return confidence;
+}
+
 /* ===== メインループ ===== */
 function loop() {
   if (!ready) {
@@ -44,7 +78,7 @@ function loop() {
 
   let src = cv.imread(inCanvas);
 
-  // 前処理（今まで通り）
+  // 前処理
   let gray = new cv.Mat();
   cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
@@ -65,13 +99,7 @@ function loop() {
   // 輪郭検出
   let contours = new cv.MatVector();
   let hierarchy = new cv.Mat();
-  cv.findContours(
-    morphed,
-    contours,
-    hierarchy,
-    cv.RETR_EXTERNAL,
-    cv.CHAIN_APPROX_SIMPLE
-  );
+  cv.findContours(morphed, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
   let display = src.clone();
   let roiShown = false;
@@ -79,7 +107,6 @@ function loop() {
   for (let i = 0; i < contours.size(); i++) {
     let cnt = contours.get(i);
     let area = cv.contourArea(cnt);
-
     if (area < 1500) {
       cnt.delete();
       continue;
@@ -90,24 +117,38 @@ function loop() {
     cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
 
     if (approx.rows === 4 && !roiShown) {
-      // 赤枠
-      cv.drawContours(
+      let rect = cv.boundingRect(cnt);
+      let roiMat = src.roi(rect);
+
+      // ROI表示
+      roiCanvas.width = rect.width;
+      roiCanvas.height = rect.height;
+      cv.imshow(roiCanvas, roiMat);
+
+      // ★ 内部パターン検査
+      let confidence = checkMicroQRPattern(roiMat);
+
+      // 結果表示
+      let label = confidence > 0.5 ? "MicroQR?" : "Not QR";
+      cv.putText(
         display,
-        contours,
-        i,
+        `${label} (${confidence.toFixed(2)})`,
+        new cv.Point(rect.x, rect.y - 10),
+        cv.FONT_HERSHEY_SIMPLEX,
+        0.8,
+        new cv.Scalar(0, 255, 0, 255),
+        2
+      );
+
+      cv.rectangle(
+        display,
+        new cv.Point(rect.x, rect.y),
+        new cv.Point(rect.x + rect.width, rect.y + rect.height),
         new cv.Scalar(255, 0, 0, 255),
         3
       );
 
-      // ★ ROI 切り出し
-      let rect = cv.boundingRect(cnt);
-      let roi = src.roi(rect);
-
-      roiCanvas.width = rect.width;
-      roiCanvas.height = rect.height;
-      cv.imshow(roiCanvas, roi);
-
-      roi.delete();
+      roiMat.delete();
       roiShown = true;
     }
 
