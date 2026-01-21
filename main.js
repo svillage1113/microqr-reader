@@ -46,29 +46,58 @@ function loop() {
 
   // ③ ぼかし
   let blurred = new cv.Mat();
-  cv.GaussianBlur(
-    enhanced,
-    blurred,
-    new cv.Size(5, 5),
-    0,
-    0,
-    cv.BORDER_DEFAULT
-  );
+  cv.GaussianBlur(enhanced, blurred, new cv.Size(5, 5), 0);
 
   // ④ Canny
   let edges = new cv.Mat();
   cv.Canny(blurred, edges, 50, 150);
 
-  // ⑤ カーネル作成（3x3）
+  // ⑤ 膨張 → 収縮
   let kernel = cv.Mat.ones(3, 3, cv.CV_8U);
-
-  // ⑥ 膨張 → 収縮（クロージング）
   let morphed = new cv.Mat();
   cv.dilate(edges, morphed, kernel);
   cv.erode(morphed, morphed, kernel);
 
-  // ⑦ 表示
-  cv.imshow(outCanvas, morphed);
+  // ⑥ 輪郭検出
+  let contours = new cv.MatVector();
+  let hierarchy = new cv.Mat();
+  cv.findContours(
+    morphed,
+    contours,
+    hierarchy,
+    cv.RETR_EXTERNAL,
+    cv.CHAIN_APPROX_SIMPLE
+  );
+
+  // ⑦ 結果表示用（カラー）
+  let display = src.clone();
+
+  // ⑧ 四角形を探す
+  for (let i = 0; i < contours.size(); i++) {
+    let cnt = contours.get(i);
+
+    let area = cv.contourArea(cnt);
+    if (area < 1000) {
+      cnt.delete();
+      continue;
+    }
+
+    let approx = new cv.Mat();
+    let peri = cv.arcLength(cnt, true);
+    cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
+
+    // ★ 頂点が4つ → 四角形候補
+    if (approx.rows === 4) {
+      let color = new cv.Scalar(255, 0, 0, 255); // 赤
+      cv.drawContours(display, contours, i, color, 3);
+    }
+
+    approx.delete();
+    cnt.delete();
+  }
+
+  // ⑨ 表示
+  cv.imshow(outCanvas, display);
 
   // メモリ解放
   src.delete();
@@ -78,6 +107,9 @@ function loop() {
   edges.delete();
   kernel.delete();
   morphed.delete();
+  contours.delete();
+  hierarchy.delete();
+  display.delete();
 
   requestAnimationFrame(loop);
 }
@@ -88,7 +120,6 @@ function waitForOpenCV() {
     setTimeout(waitForOpenCV, 50);
     return;
   }
-
   cv.onRuntimeInitialized = () => {
     startCamera();
   };
