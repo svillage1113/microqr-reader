@@ -1,5 +1,6 @@
 let video, inCanvas, outCanvas, roiCanvas, inCtx;
 let ready = false;
+let lastSent = 0;
 
 /* ===== カメラ起動 ===== */
 function startCamera() {
@@ -31,7 +32,7 @@ function startCamera() {
   });
 }
 
-/* ===== MicroQR Finder 専用チェック ===== */
+/* ===== MicroQR Finder 判定 ===== */
 function checkMicroQRFinder(roiMat) {
   let gray = new cv.Mat();
   cv.cvtColor(roiMat, gray, cv.COLOR_RGBA2GRAY);
@@ -39,11 +40,9 @@ function checkMicroQRFinder(roiMat) {
   let resized = new cv.Mat();
   cv.resize(gray, resized, new cv.Size(64, 64));
 
-  // 左上 1/3
   let s = Math.floor(64 / 3);
   let roi = resized.roi(new cv.Rect(0, 0, s, s));
 
-  // --- 中央と外周の平均輝度 ---
   let centerSum = 0, centerCnt = 0;
   let edgeSum = 0, edgeCnt = 0;
 
@@ -67,7 +66,6 @@ function checkMicroQRFinder(roiMat) {
   let centerAvg = centerSum / centerCnt;
   let edgeAvg = edgeSum / edgeCnt;
 
-  // --- 横1ラインの遷移回数（少ないほど良い） ---
   let y = Math.floor(s / 2);
   let transitions = 0;
   let prev = roi.ucharPtr(y, 0)[0] > 128;
@@ -81,19 +79,36 @@ function checkMicroQRFinder(roiMat) {
   resized.delete();
   roi.delete();
 
-  // --- 判定スコア ---
   let score = 0;
-
-  // 中央が明るい（白）
   if (centerAvg > 160) score += 0.4;
-
-  // 外周が暗い（黒）
   if (edgeAvg < 120) score += 0.4;
-
-  // 遷移が少ない（太い構造）
   if (transitions <= 3) score += 0.2;
 
-  return score; // 0.0〜1.0
+  return score;
+}
+
+/* ===== JSON送信（Bubble向け） ===== */
+function sendToBubble(confidence, rect) {
+  let now = Date.now();
+  if (now - lastSent < 1500) return; // 連続送信防止
+  lastSent = now;
+
+  let payload = {
+    type: "microqr",
+    confidence: Number(confidence.toFixed(2)),
+    bbox: {
+      x: rect.x,
+      y: rect.y,
+      w: rect.width,
+      h: rect.height
+    },
+    timestamp: now
+  };
+
+  // 将来：Bubble iframe / WebView で受信
+  window.postMessage(payload, "*");
+
+  console.log("Send to Bubble:", payload);
 }
 
 /* ===== メインループ ===== */
@@ -104,24 +119,19 @@ function loop() {
   }
 
   inCtx.drawImage(video, 0, 0, inCanvas.width, inCanvas.height);
-
   let src = cv.imread(inCanvas);
 
   let gray = new cv.Mat();
   cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
-  let blurred = new cv.Mat();
-  cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
-
   let edges = new cv.Mat();
-  cv.Canny(blurred, edges, 50, 150);
+  cv.Canny(gray, edges, 50, 150);
 
   let contours = new cv.MatVector();
   let hierarchy = new cv.Mat();
   cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
   let display = src.clone();
-  let roiShown = false;
 
   for (let i = 0; i < contours.size(); i++) {
     let cnt = contours.get(i);
@@ -134,17 +144,16 @@ function loop() {
     let approx = new cv.Mat();
     cv.approxPolyDP(cnt, approx, 0.02 * cv.arcLength(cnt, true), true);
 
-    if (approx.rows === 4 && !roiShown) {
+    if (approx.rows === 4) {
       let rect = cv.boundingRect(cnt);
       let roiMat = src.roi(rect);
 
-      roiCanvas.width = rect.width;
-      roiCanvas.height = rect.height;
-      cv.imshow(roiCanvas, roiMat);
-
       let confidence = checkMicroQRFinder(roiMat);
 
-      let label = confidence >= 0.6 ? "MicroQR Finder" : "Not QR";
+      if (confidence >= 0.6) {
+        sendToBubble(confidence, rect);
+      }
+
       let color = confidence >= 0.6
         ? new cv.Scalar(0, 255, 0, 255)
         : new cv.Scalar(255, 0, 0, 255);
@@ -159,16 +168,17 @@ function loop() {
 
       cv.putText(
         display,
-        `${label} (${confidence.toFixed(2)})`,
+        confidence >= 0.6
+          ? `MicroQR (${confidence.toFixed(2)})`
+          : `Not QR`,
         new cv.Point(rect.x, rect.y - 8),
         cv.FONT_HERSHEY_SIMPLEX,
-        0.8,
+        0.7,
         color,
         2
       );
 
       roiMat.delete();
-      roiShown = true;
     }
 
     approx.delete();
@@ -179,7 +189,6 @@ function loop() {
 
   src.delete();
   gray.delete();
-  blurred.delete();
   edges.delete();
   contours.delete();
   hierarchy.delete();
