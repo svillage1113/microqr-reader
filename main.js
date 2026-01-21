@@ -31,39 +31,69 @@ function startCamera() {
   });
 }
 
-/* ===== MicroQR 内部パターン検査 ===== */
-function checkMicroQRPattern(roiMat) {
-  // グレースケール
+/* ===== MicroQR Finder 専用チェック ===== */
+function checkMicroQRFinder(roiMat) {
   let gray = new cv.Mat();
   cv.cvtColor(roiMat, gray, cv.COLOR_RGBA2GRAY);
 
-  // 64x64 に正規化
   let resized = new cv.Mat();
   cv.resize(gray, resized, new cv.Size(64, 64));
 
-  // 左上 1/3 領域
-  let size = Math.floor(64 / 3);
-  let roi = resized.roi(new cv.Rect(0, 0, size, size));
+  // 左上 1/3
+  let s = Math.floor(64 / 3);
+  let roi = resized.roi(new cv.Rect(0, 0, s, s));
 
-  // 横方向スキャン（中央ライン）
-  let y = Math.floor(size / 2);
+  // --- 中央と外周の平均輝度 ---
+  let centerSum = 0, centerCnt = 0;
+  let edgeSum = 0, edgeCnt = 0;
+
+  for (let y = 0; y < s; y++) {
+    for (let x = 0; x < s; x++) {
+      let v = roi.ucharPtr(y, x)[0];
+      let isCenter =
+        x > s * 0.3 && x < s * 0.7 &&
+        y > s * 0.3 && y < s * 0.7;
+
+      if (isCenter) {
+        centerSum += v;
+        centerCnt++;
+      } else {
+        edgeSum += v;
+        edgeCnt++;
+      }
+    }
+  }
+
+  let centerAvg = centerSum / centerCnt;
+  let edgeAvg = edgeSum / edgeCnt;
+
+  // --- 横1ラインの遷移回数（少ないほど良い） ---
+  let y = Math.floor(s / 2);
   let transitions = 0;
   let prev = roi.ucharPtr(y, 0)[0] > 128;
-
-  for (let x = 1; x < size; x++) {
+  for (let x = 1; x < s; x++) {
     let cur = roi.ucharPtr(y, x)[0] > 128;
     if (cur !== prev) transitions++;
     prev = cur;
   }
 
-  // 後始末
   gray.delete();
   resized.delete();
   roi.delete();
 
-  // 黒→白→黒 = 遷移2回以上
-  let confidence = Math.min(transitions / 4, 1.0);
-  return confidence;
+  // --- 判定スコア ---
+  let score = 0;
+
+  // 中央が明るい（白）
+  if (centerAvg > 160) score += 0.4;
+
+  // 外周が暗い（黒）
+  if (edgeAvg < 120) score += 0.4;
+
+  // 遷移が少ない（太い構造）
+  if (transitions <= 3) score += 0.2;
+
+  return score; // 0.0〜1.0
 }
 
 /* ===== メインループ ===== */
@@ -73,33 +103,22 @@ function loop() {
     return;
   }
 
-  // video → input
   inCtx.drawImage(video, 0, 0, inCanvas.width, inCanvas.height);
 
   let src = cv.imread(inCanvas);
 
-  // 前処理
   let gray = new cv.Mat();
   cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
-  let enhanced = new cv.Mat();
-  cv.normalize(gray, enhanced, 0, 255, cv.NORM_MINMAX);
-
   let blurred = new cv.Mat();
-  cv.GaussianBlur(enhanced, blurred, new cv.Size(5, 5), 0);
+  cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
 
   let edges = new cv.Mat();
   cv.Canny(blurred, edges, 50, 150);
 
-  let kernel = cv.Mat.ones(3, 3, cv.CV_8U);
-  let morphed = new cv.Mat();
-  cv.dilate(edges, morphed, kernel);
-  cv.erode(morphed, morphed, kernel);
-
-  // 輪郭検出
   let contours = new cv.MatVector();
   let hierarchy = new cv.Mat();
-  cv.findContours(morphed, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+  cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
   let display = src.clone();
   let roiShown = false;
@@ -113,39 +132,39 @@ function loop() {
     }
 
     let approx = new cv.Mat();
-    let peri = cv.arcLength(cnt, true);
-    cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
+    cv.approxPolyDP(cnt, approx, 0.02 * cv.arcLength(cnt, true), true);
 
     if (approx.rows === 4 && !roiShown) {
       let rect = cv.boundingRect(cnt);
       let roiMat = src.roi(rect);
 
-      // ROI表示
       roiCanvas.width = rect.width;
       roiCanvas.height = rect.height;
       cv.imshow(roiCanvas, roiMat);
 
-      // ★ 内部パターン検査
-      let confidence = checkMicroQRPattern(roiMat);
+      let confidence = checkMicroQRFinder(roiMat);
 
-      // 結果表示
-      let label = confidence > 0.5 ? "MicroQR?" : "Not QR";
-      cv.putText(
-        display,
-        `${label} (${confidence.toFixed(2)})`,
-        new cv.Point(rect.x, rect.y - 10),
-        cv.FONT_HERSHEY_SIMPLEX,
-        0.8,
-        new cv.Scalar(0, 255, 0, 255),
-        2
-      );
+      let label = confidence >= 0.6 ? "MicroQR Finder" : "Not QR";
+      let color = confidence >= 0.6
+        ? new cv.Scalar(0, 255, 0, 255)
+        : new cv.Scalar(255, 0, 0, 255);
 
       cv.rectangle(
         display,
         new cv.Point(rect.x, rect.y),
         new cv.Point(rect.x + rect.width, rect.y + rect.height),
-        new cv.Scalar(255, 0, 0, 255),
+        color,
         3
+      );
+
+      cv.putText(
+        display,
+        `${label} (${confidence.toFixed(2)})`,
+        new cv.Point(rect.x, rect.y - 8),
+        cv.FONT_HERSHEY_SIMPLEX,
+        0.8,
+        color,
+        2
       );
 
       roiMat.delete();
@@ -158,14 +177,10 @@ function loop() {
 
   cv.imshow(outCanvas, display);
 
-  // メモリ解放
   src.delete();
   gray.delete();
-  enhanced.delete();
   blurred.delete();
   edges.delete();
-  kernel.delete();
-  morphed.delete();
   contours.delete();
   hierarchy.delete();
   display.delete();
@@ -173,15 +188,12 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-/* ===== OpenCV 初期化待ち ===== */
+/* ===== OpenCV待ち ===== */
 function waitForOpenCV() {
   if (typeof cv === "undefined") {
     setTimeout(waitForOpenCV, 50);
     return;
   }
-  cv.onRuntimeInitialized = () => {
-    startCamera();
-  };
+  cv.onRuntimeInitialized = startCamera;
 }
-
 waitForOpenCV();
