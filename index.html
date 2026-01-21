@@ -1,26 +1,27 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <title>MicroQR Detector Prototype</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <title>MicroQR Detector</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- OpenCV.js 固定版 -->
+  <!-- OpenCV.js（実績あり） -->
   <script src="https://docs.opencv.org/4.8.0/opencv.js"></script>
 
   <style>
     body {
+      margin: 0;
       background: #111;
       color: #fff;
       font-family: sans-serif;
       text-align: center;
     }
 
-    .container {
+    .row {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 12px;
+      gap: 8px;
     }
 
     canvas {
@@ -29,41 +30,45 @@
     }
 
     video {
-      display: none; /* videoタグは表示しない */
+      display: none;
     }
 
-    h2 {
-      width: 100%;
-      margin-top: 20px;
+    #debug {
+      background: #000;
+      color: #0f0;
+      font-size: 12px;
+      padding: 8px;
+      height: 140px;
+      overflow: auto;
+      white-space: pre-wrap;
+      text-align: left;
     }
   </style>
 </head>
 <body>
 
-  <h1>MicroQR 検出テスト</h1>
+<h2>MicroQR Detector（デバッグ表示）</h2>
 
-  <!-- カメラ用（非表示） -->
-  <video id="video" playsinline></video>
+<video id="video" playsinline></video>
 
-  <div class="container">
-    <div>
-      <h2>Input（カメラ）</h2>
-      <canvas id="input"></canvas>
-    </div>
-
-    <div>
-      <h2>Detection（赤枠）</h2>
-      <canvas id="output"></canvas>
-    </div>
-
-    <div>
-      <h2>ROI（切り出し）</h2>
-      <canvas id="roi"></canvas>
-    </div>
+<div class="row">
+  <div>
+    <p>Input</p>
+    <canvas id="input"></canvas>
   </div>
+  <div>
+    <p>Detection</p>
+    <canvas id="output"></canvas>
+  </div>
+  <div>
+    <p>ROI</p>
+    <canvas id="roi"></canvas>
+  </div>
+</div>
 
-  <!-- メイン処理 -->
-  <script src="main.js"></script>
+<p>Debug log（iPhone単体確認用）</p>
+<div id="debug">ready...</div>
 
+<script src="main.js"></script>
 </body>
 </html>
