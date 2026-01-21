@@ -2,8 +2,19 @@ let video, inCanvas, outCanvas, roiCanvas, inCtx;
 let ready = false;
 let lastSent = 0;
 
+/* ===== 画面ログ（Mac不要） ===== */
+function logToScreen(msg) {
+  const box = document.getElementById("debug");
+  if (!box) return;
+  box.textContent =
+    `[${new Date().toLocaleTimeString()}] ${msg}\n` +
+    box.textContent;
+}
+
 /* ===== カメラ起動 ===== */
 function startCamera() {
+  logToScreen("Camera start");
+
   video = document.getElementById("video");
   inCanvas = document.getElementById("input");
   outCanvas = document.getElementById("output");
@@ -27,8 +38,11 @@ function startCamera() {
       roiCanvas.height = video.videoHeight;
 
       ready = true;
+      logToScreen("Camera ready");
       requestAnimationFrame(loop);
     });
+  }).catch(err => {
+    logToScreen("Camera error: " + err);
   });
 }
 
@@ -87,10 +101,10 @@ function checkMicroQRFinder(roiMat) {
   return score;
 }
 
-/* ===== JSON送信（Bubble向け） ===== */
-function sendToBubble(confidence, rect) {
+/* ===== Bubble送信用（画面表示） ===== */
+function sendResult(confidence, rect) {
   let now = Date.now();
-  if (now - lastSent < 1500) return; // 連続送信防止
+  if (now - lastSent < 1500) return;
   lastSent = now;
 
   let payload = {
@@ -105,10 +119,7 @@ function sendToBubble(confidence, rect) {
     timestamp: now
   };
 
-  // 将来：Bubble iframe / WebView で受信
-  window.postMessage(payload, "*");
-
-  console.log("Send to Bubble:", payload);
+  logToScreen("Send: " + JSON.stringify(payload));
 }
 
 /* ===== メインループ ===== */
@@ -148,10 +159,14 @@ function loop() {
       let rect = cv.boundingRect(cnt);
       let roiMat = src.roi(rect);
 
+      roiCanvas.width = rect.width;
+      roiCanvas.height = rect.height;
+      cv.imshow(roiCanvas, roiMat);
+
       let confidence = checkMicroQRFinder(roiMat);
 
       if (confidence >= 0.6) {
-        sendToBubble(confidence, rect);
+        sendResult(confidence, rect);
       }
 
       let color = confidence >= 0.6
@@ -170,7 +185,7 @@ function loop() {
         display,
         confidence >= 0.6
           ? `MicroQR (${confidence.toFixed(2)})`
-          : `Not QR`,
+          : "Not QR",
         new cv.Point(rect.x, rect.y - 8),
         cv.FONT_HERSHEY_SIMPLEX,
         0.7,
@@ -197,7 +212,7 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-/* ===== OpenCV待ち ===== */
+/* ===== OpenCV初期化待ち ===== */
 function waitForOpenCV() {
   if (typeof cv === "undefined") {
     setTimeout(waitForOpenCV, 50);
