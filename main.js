@@ -21,8 +21,6 @@ function startCamera() {
       ready = true;
       requestAnimationFrame(loop);
     });
-  }).catch(err => {
-    alert("カメラエラー: " + err);
   });
 }
 
@@ -33,21 +31,20 @@ function loop() {
     return;
   }
 
-  // ① video → input canvas
+  // video → input canvas
   inCtx.drawImage(video, 0, 0, inCanvas.width, inCanvas.height);
 
-  // ② input canvas → OpenCV
   let src = cv.imread(inCanvas);
 
-  // ③ グレースケール
+  // ① グレースケール
   let gray = new cv.Mat();
   cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
 
-  // ④ コントラスト強調
+  // ② コントラスト強調
   let enhanced = new cv.Mat();
   cv.normalize(gray, enhanced, 0, 255, cv.NORM_MINMAX);
 
-  // ⑤ ぼかし（Canny必須）
+  // ③ ぼかし
   let blurred = new cv.Mat();
   cv.GaussianBlur(
     enhanced,
@@ -58,24 +55,34 @@ function loop() {
     cv.BORDER_DEFAULT
   );
 
-  // ⑥ エッジ検出
+  // ④ Canny
   let edges = new cv.Mat();
   cv.Canny(blurred, edges, 50, 150);
 
-  // ⑦ ★そのまま表示（超重要）
-  cv.imshow(outCanvas, edges);
+  // ⑤ カーネル作成（3x3）
+  let kernel = cv.Mat.ones(3, 3, cv.CV_8U);
 
-  // ⑧ メモリ解放
+  // ⑥ 膨張 → 収縮（クロージング）
+  let morphed = new cv.Mat();
+  cv.dilate(edges, morphed, kernel);
+  cv.erode(morphed, morphed, kernel);
+
+  // ⑦ 表示
+  cv.imshow(outCanvas, morphed);
+
+  // メモリ解放
   src.delete();
   gray.delete();
   enhanced.delete();
   blurred.delete();
   edges.delete();
+  kernel.delete();
+  morphed.delete();
 
   requestAnimationFrame(loop);
 }
 
-/* ===== OpenCV.js 初期化待ち ===== */
+/* ===== OpenCV 初期化待ち ===== */
 function waitForOpenCV() {
   if (typeof cv === "undefined") {
     setTimeout(waitForOpenCV, 50);
@@ -83,7 +90,6 @@ function waitForOpenCV() {
   }
 
   cv.onRuntimeInitialized = () => {
-    console.log("OpenCV ready");
     startCamera();
   };
 }
