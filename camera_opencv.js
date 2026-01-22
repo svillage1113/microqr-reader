@@ -1,36 +1,34 @@
 let cap, src, gray;
+let video, canvas;
 
 (async () => {
-  const video = document.getElementById("video");
-  const canvas = document.getElementById("canvas");
+  video = document.getElementById("video");
+  canvas = document.getElementById("canvas");
 
-  try {
-    // ① カメラ起動
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment" },
-      audio: false
-    });
+  // カメラ起動
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: "environment" },
+    audio: false
+  });
 
-    video.srcObject = stream;
-    video.setAttribute("playsinline", true);
-    await video.play();
-
-    // ② フレームが本当に来るまで待つ
-    const waitForReady = () => {
-      if (video.readyState >= 2 && video.videoWidth > 0) {
-        startOpenCV(video, canvas);
-      } else {
-        requestAnimationFrame(waitForReady);
-      }
-    };
-    waitForReady();
-
-  } catch (e) {
-    console.error("camera init failed", e);
-  }
+  video.srcObject = stream;
+  video.setAttribute("playsinline", true);
+  await video.play();
 })();
 
-function startOpenCV(video, canvas) {
+// ★ OpenCV が完全に初期化されたらここが呼ばれる
+function startWhenOpenCVReady() {
+  const waitVideo = () => {
+    if (video.videoWidth > 0 && video.readyState >= 2) {
+      initOpenCV();
+    } else {
+      requestAnimationFrame(waitVideo);
+    }
+  };
+  waitVideo();
+}
+
+function initOpenCV() {
   const w = video.videoWidth;
   const h = video.videoHeight;
 
